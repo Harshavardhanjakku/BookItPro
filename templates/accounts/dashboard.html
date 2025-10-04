@@ -15,7 +15,17 @@
         </div>
     </div>
     
-    {% if user.is_organizer %}
+    <!-- Welcome Message -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h5><i class="fas fa-info-circle"></i> {{ message }}</h5>
+                <p class="mb-0">Your tenant: <strong>{{ tenant.name|default:"No tenant assigned" }}</strong></p>
+            </div>
+        </div>
+    </div>
+    
+    {% if dashboard_type == 'organizer' %}
         <!-- Organizer Dashboard -->
         <div class="row">
             <div class="col-md-4 mb-4">
@@ -23,7 +33,7 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h4>{{ events|length }}</h4>
+                                <h4>{{ event_count }}</h4>
                                 <p class="mb-0">Total Events</p>
                             </div>
                             <div class="align-self-center">
@@ -39,7 +49,7 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h4>{{ tenant.name }}</h4>
+                                <h4>{{ tenant.name|truncatechars:15 }}</h4>
                                 <p class="mb-0">Organization</p>
                             </div>
                             <div class="align-self-center">
@@ -71,48 +81,33 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5><i class="fas fa-calendar-alt"></i> Your Events</h5>
+                        <h5><i class="fas fa-tasks"></i> Next Steps</h5>
                     </div>
                     <div class="card-body">
-                        {% if events %}
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Event</th>
-                                            <th>Date</th>
-                                            <th>Capacity</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for event in events %}
-                                        <tr>
-                                            <td>{{ event.title }}</td>
-                                            <td>{{ event.start_date|date:"M d, Y" }}</td>
-                                            <td>{{ event.capacity }}</td>
-                                            <td>
-                                                <span class="badge bg-{% if event.status == 'published' %}success{% elif event.status == 'draft' %}warning{% else %}secondary{% endif %}">
-                                                    {{ event.get_status_display }}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <a href="#" class="btn btn-sm btn-outline-primary">View</a>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
+                        <div class="row">
+                            {% for step in next_steps %}
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <span class="fw-bold">{{ forloop.counter }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-0">{{ step }}</h6>
+                                        <small class="text-muted">Coming soon...</small>
+                                    </div>
+                                </div>
                             </div>
-                        {% else %}
-                            <div class="text-center py-4">
-                                <i class="fas fa-calendar-plus fa-3x text-muted mb-3"></i>
-                                <h5 class="text-muted">No events yet</h5>
-                                <p class="text-muted">Create your first event to get started!</p>
-                                <a href="#" class="btn btn-primary">Create Event</a>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-4">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Event Management System</strong> is currently being implemented. 
+                                You can create events and manage bookings once the system is complete.
                             </div>
-                        {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -125,7 +120,7 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h4>{{ bookings|length }}</h4>
+                                <h4>{{ booking_count }}</h4>
                                 <p class="mb-0">My Bookings</p>
                             </div>
                             <div class="align-self-center">
@@ -157,48 +152,33 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5><i class="fas fa-ticket-alt"></i> My Bookings</h5>
+                        <h5><i class="fas fa-tasks"></i> Next Steps</h5>
                     </div>
                     <div class="card-body">
-                        {% if bookings %}
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Event</th>
-                                            <th>Date</th>
-                                            <th>Status</th>
-                                            <th>Confirmation Code</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for booking in bookings %}
-                                        <tr>
-                                            <td>{{ booking.event.title }}</td>
-                                            <td>{{ booking.event.start_date|date:"M d, Y" }}</td>
-                                            <td>
-                                                <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% else %}secondary{% endif %}">
-                                                    {{ booking.get_status_display }}
-                                                </span>
-                                            </td>
-                                            <td><code>{{ booking.confirmation_code }}</code></td>
-                                            <td>
-                                                <a href="#" class="btn btn-sm btn-outline-primary">View</a>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
+                        <div class="row">
+                            {% for step in next_steps %}
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <span class="fw-bold">{{ forloop.counter }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-0">{{ step }}</h6>
+                                        <small class="text-muted">Coming soon...</small>
+                                    </div>
+                                </div>
                             </div>
-                        {% else %}
-                            <div class="text-center py-4">
-                                <i class="fas fa-calendar-plus fa-3x text-muted mb-3"></i>
-                                <h5 class="text-muted">No bookings yet</h5>
-                                <p class="text-muted">Browse events and make your first booking!</p>
-                                <a href="{% url 'events:event_list' %}" class="btn btn-primary">Browse Events</a>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-4">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Event Booking System</strong> is currently being implemented. 
+                                You can browse events and make bookings once the system is complete.
                             </div>
-                        {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>

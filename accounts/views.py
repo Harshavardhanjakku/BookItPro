@@ -6,6 +6,10 @@ from django.contrib.auth.views import PasswordResetView, PasswordResetDoneView, 
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from django.contrib.auth import get_user_model
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.db import connection
 from .models import Tenant
 from .forms import UserRegistrationForm, UserLoginForm, TenantRegistrationForm
 from bookitpro_project.multitenant import set_current_tenant
@@ -54,28 +58,88 @@ def user_logout(request):
 
 
 class UserRegistrationView(CreateView):
-    """User registration view"""
+    """User registration view - creates user with personal tenant and schema"""
     model = User
     form_class = UserRegistrationForm
     template_name = 'accounts/register.html'
     success_url = reverse_lazy('accounts:login')
     
     def form_valid(self, form):
+        # Create the user first
         response = super().form_valid(form)
-        messages.success(self.request, 'Account created successfully! Please log in.')
+        user = self.object
+        
+        # Create a personal tenant for the user
+        tenant_name = f"{user.first_name} {user.last_name}'s Events"
+        tenant_slug = f"{user.first_name.lower()}-{user.last_name.lower()}-events"
+        
+        # Ensure slug is unique
+        counter = 1
+        original_slug = tenant_slug
+        while Tenant.objects.filter(slug=tenant_slug).exists():
+            tenant_slug = f"{original_slug}-{counter}"
+            counter += 1
+        
+        tenant = Tenant.objects.create(
+            name=tenant_name,
+            slug=tenant_slug,
+            description=f"Personal event space for {user.first_name} {user.last_name}",
+            is_active=True
+        )
+        
+        # Assign tenant to user
+        user.tenant = tenant
+        user.role = 'admin'  # Make them admin of their personal tenant
+        user.save()
+        
+        # Create schema for the tenant
+        try:
+            schema_name = f"tenant_{tenant.slug}"
+            with connection.cursor() as cursor:
+                cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
+                create_tenant_tables(cursor, schema_name)
+            
+            messages.success(self.request, f'Account and personal event space created successfully! Your tenant: {tenant_name}')
+        except Exception as e:
+            messages.warning(self.request, f'Account created but schema creation failed: {str(e)}')
+        
         return response
 
 
 class TenantRegistrationView(CreateView):
-    """Tenant registration view for organizers"""
+    """Tenant registration view for organizers - creates tenant, admin user, and schema"""
     model = Tenant
     form_class = TenantRegistrationForm
     template_name = 'accounts/register_tenant.html'
     success_url = reverse_lazy('accounts:login')
     
     def form_valid(self, form):
+        # Create the tenant first
         response = super().form_valid(form)
-        messages.success(self.request, 'Organization registered successfully! Please log in.')
+        tenant = self.object
+        
+        # Create admin user for the tenant
+        admin_data = form.cleaned_data
+        admin_user = User.objects.create_user(
+            email=admin_data['organizer_email'],
+            first_name=admin_data['organizer_first_name'],
+            last_name=admin_data['organizer_last_name'],
+            password=admin_data['organizer_password'],
+            role='admin',
+            tenant=tenant
+        )
+        
+        # Create schema for the tenant
+        try:
+            schema_name = f"tenant_{tenant.slug}"
+            with connection.cursor() as cursor:
+                cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
+                create_tenant_tables(cursor, schema_name)
+            
+            messages.success(self.request, f'Organization "{tenant.name}" registered successfully! Admin user created. Schema: {schema_name}')
+        except Exception as e:
+            messages.warning(self.request, f'Organization created but schema creation failed: {str(e)}')
+        
         return response
 
 
@@ -83,19 +147,40 @@ class TenantRegistrationView(CreateView):
 def dashboard(request):
     """User dashboard"""
     user = request.user
+    tenant = getattr(request, 'tenant', None)
+    
     context = {
         'user': user,
-        'tenant': getattr(request, 'tenant', None),
+        'tenant': tenant,
+        'events': [],
+        'bookings': [],
+        'event_count': 0,
+        'booking_count': 0,
     }
     
+    # For now, show basic dashboard until we implement event/booking queries
     if user.is_organizer():
         # Show organizer dashboard
-        context['events'] = user.tenant.events.all() if user.tenant else []
-        return render(request, 'accounts/organizer_dashboard.html', context)
+        context['dashboard_type'] = 'organizer'
+        context['message'] = f'Welcome to your organizer dashboard for {tenant.name if tenant else "your organization"}!'
+        context['next_steps'] = [
+            'Create your first event',
+            'Set up event types',
+            'Manage bookings',
+            'View analytics'
+        ]
     else:
         # Show attendee dashboard
-        context['bookings'] = user.bookings.all()
-        return render(request, 'accounts/attendee_dashboard.html', context)
+        context['dashboard_type'] = 'attendee'
+        context['message'] = f'Welcome {user.first_name}! Browse and book events.'
+        context['next_steps'] = [
+            'Browse available events',
+            'Book your first event',
+            'View your bookings',
+            'Update your profile'
+        ]
+    
+    return render(request, 'accounts/dashboard.html', context)
 
 
 @login_required
@@ -133,3 +218,142 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
 
 class CustomPasswordResetCompleteView(PasswordResetCompleteView):
     template_name = 'accounts/password_reset_complete.html'
+
+
+# API Endpoints for Schema Management
+@csrf_exempt
+@require_http_methods(["POST"])
+def create_tenant_schema_api(request):
+    """API endpoint to create schema for a specific tenant"""
+    try:
+        data = request.POST if request.method == 'POST' else {}
+        tenant_slug = data.get('tenant_slug')
+        
+        if not tenant_slug:
+            return JsonResponse({
+                'success': False,
+                'error': 'tenant_slug parameter is required'
+            }, status=400)
+        
+        # Check if tenant exists
+        try:
+            tenant = Tenant.objects.get(slug=tenant_slug)
+        except Tenant.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': f'Tenant with slug "{tenant_slug}" does not exist'
+            }, status=404)
+        
+        # Create schema
+        schema_name = f"tenant_{tenant.slug}"
+        
+        with connection.cursor() as cursor:
+            # Create schema if it doesn't exist
+            cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
+            
+            # Create tables in the tenant schema
+            create_tenant_tables(cursor, schema_name)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Successfully created schema: {schema_name}',
+            'schema_name': schema_name,
+            'tenant_name': tenant.name
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def list_tenants_api(request):
+    """API endpoint to list all tenants"""
+    try:
+        tenants = Tenant.objects.filter(is_active=True)
+        tenant_list = []
+        
+        for tenant in tenants:
+            tenant_list.append({
+                'id': tenant.id,
+                'name': tenant.name,
+                'slug': tenant.slug,
+                'description': tenant.description,
+                'schema_name': f"tenant_{tenant.slug}",
+                'created_at': tenant.created_at.isoformat()
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'tenants': tenant_list,
+            'count': len(tenant_list)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+def create_tenant_tables(cursor, schema_name):
+    """Create necessary tables in tenant schema"""
+    
+    # Events table
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS "{schema_name}".events_eventtype (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(50) NOT NULL,
+            description TEXT,
+            icon VARCHAR(50),
+            tenant_schema VARCHAR(100),
+            CONSTRAINT unique_name_per_tenant UNIQUE (name, tenant_schema)
+        )
+    """)
+    
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS "{schema_name}".events_event (
+            id SERIAL PRIMARY KEY,
+            title VARCHAR(200) NOT NULL,
+            description TEXT NOT NULL,
+            event_type_id INTEGER REFERENCES "{schema_name}".events_eventtype(id),
+            tenant_id INTEGER REFERENCES public.accounts_tenant(id),
+            start_date TIMESTAMP WITH TIME ZONE NOT NULL,
+            end_date TIMESTAMP WITH TIME ZONE NOT NULL,
+            location VARCHAR(200) NOT NULL,
+            capacity INTEGER NOT NULL,
+            price DECIMAL(10,2) DEFAULT 0.00,
+            image VARCHAR(100),
+            is_active BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            tenant_schema VARCHAR(100)
+        )
+    """)
+    
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS "{schema_name}".bookings_booking (
+            id SERIAL PRIMARY KEY,
+            event_id INTEGER REFERENCES "{schema_name}".events_event(id),
+            user_id INTEGER REFERENCES public.accounts_user(id),
+            booking_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            status VARCHAR(20) DEFAULT 'confirmed',
+            notes TEXT,
+            tenant_schema VARCHAR(100),
+            CONSTRAINT unique_booking_per_user_event UNIQUE (event_id, user_id, tenant_schema)
+        )
+    """)
+    
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS "{schema_name}".bookings_bookinghistory (
+            id SERIAL PRIMARY KEY,
+            booking_id INTEGER REFERENCES "{schema_name}".bookings_booking(id),
+            action VARCHAR(50) NOT NULL,
+            timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            notes TEXT,
+            tenant_schema VARCHAR(100)
+        )
+    """)
