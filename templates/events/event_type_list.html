@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Event Types - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-tags"></i> Event Types</h2>
+                <div>
+                    <a href="{% url 'events:event_list' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-calendar-alt"></i> Events
+                    </a>
+                    <a href="{% url 'events:event_type_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Event Type
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% if event_types %}
+            {% for event_type in event_types %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            {% if event_type.icon %}
+                                <i class="{{ event_type.icon }} fa-3x text-primary"></i>
+                            {% else %}
+                                <i class="fas fa-tag fa-3x text-primary"></i>
+                            {% endif %}
+                        </div>
+                        
+                        <h5 class="card-title">{{ event_type.name }}</h5>
+                        
+                        {% if event_type.description %}
+                        <p class="card-text text-muted">{{ event_type.description }}</p>
+                        {% endif %}
+                        
+                        <div class="mt-auto">
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'events:event_type_edit' event_type.id %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <a href="{% url 'events:event_type_delete' event_type.id %}" class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-tags fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">No event types yet</h4>
+                    <p class="text-muted">Create your first event type to categorize your events!</p>
+                    <a href="{% url 'events:event_type_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Event Type
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}My Bookings - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-ticket-alt"></i> My Bookings</h2>
+                <div>
+                    <a href="{% url 'events:event_list' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-calendar-alt"></i> Browse Events
+                    </a>
+                    {% if user.is_organizer %}
+                    <a href="{% url 'bookings:admin_booking_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-users"></i> All Bookings
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Search and Filter Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            {{ search_form.search_query }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ search_form.status }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ search_form.date_from }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ search_form.date_to }}
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bookings List -->
+    <div class="row">
+        {% if bookings %}
+            {% for booking in bookings %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="card-title">{{ booking.event.title }}</h5>
+                            <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% elif booking.status == 'cancelled' %}danger{% else %}secondary{% endif %}">
+                                {{ booking.get_status_display }}
+                            </span>
+                        </div>
+                        
+                        <p class="text-muted small mb-3">
+                            <i class="fas fa-tag"></i> {{ booking.event.event_type.name }}
+                        </p>
+                        
+                        <div class="row text-center mb-3">
+                            <div class="col-6">
+                                <small class="text-muted">Event Date</small><br>
+                                <strong>{{ booking.event.start_date|date:"M d, Y" }}</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Event Time</small><br>
+                                <strong>{{ booking.event.start_date|time:"g:i A" }}</strong>
+                            </div>
+                        </div>
+                        
+                        <div class="row text-center mb-3">
+                            <div class="col-6">
+                                <small class="text-muted">Location</small><br>
+                                <strong>{{ booking.event.location|truncatechars:15 }}</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Confirmation Code</small><br>
+                                <strong><code>{{ booking.confirmation_code }}</code></strong>
+                            </div>
+                        </div>
+                        
+                        <div class="row text-center mb-3">
+                            <div class="col-6">
+                                <small class="text-muted">Booking Date</small><br>
+                                <strong>{{ booking.booking_date|date:"M d, Y" }}</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Price</small><br>
+                                <strong>
+                                    {% if booking.event.price > 0 %}
+                                        ${{ booking.event.price }}
+                                    {% else %}
+                                        Free
+                                    {% endif %}
+                                </strong>
+                            </div>
+                        </div>
+                        
+                        {% if booking.notes %}
+                        <div class="mb-3">
+                            <small class="text-muted">Notes:</small>
+                            <p class="small">{{ booking.notes }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'bookings:booking_detail' booking.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i> View Details
+                            </a>
+                            <div>
+                                {% if booking.status in 'confirmed,pending' and booking.event.start_date > now %}
+                                <a href="{% url 'bookings:booking_cancel' booking.id %}" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'events:event_detail' booking.event.id %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-calendar"></i> Event
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-ticket-alt fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">No bookings found</h4>
+                    <p class="text-muted">
+                        {% if search_form.search_query.value %}
+                            No bookings match your search criteria.
+                        {% else %}
+                            You haven't made any bookings yet.
+                        {% endif %}
+                    </p>
+                    <a href="{% url 'events:event_list' %}" class="btn btn-primary">
+                        <i class="fas fa-calendar-alt"></i> Browse Events
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if bookings.has_other_pages %}
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="Bookings pagination">
+                <ul class="pagination justify-content-center">
+                    {% if bookings.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ bookings.previous_page_number }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in bookings.paginator.page_range %}
+                    {% if bookings.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > bookings.number|add:'-3' and num < bookings.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if bookings.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ bookings.next_page_number }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Results Summary -->
+    {% if bookings %}
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center text-muted">
+                <small>Showing {{ bookings.start_index }}-{{ bookings.end_index }} of {{ total_bookings }} bookings</small>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

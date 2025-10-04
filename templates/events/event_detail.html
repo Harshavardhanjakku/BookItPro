@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ event.title }} - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'events:event_list' %}">Events</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ event.title }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                {% if event.image %}
+                <img src="{{ event.image.url }}" class="card-img-top" alt="{{ event.title }}" style="height: 300px; object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 300px;">
+                    <i class="fas fa-calendar-alt fa-4x text-muted"></i>
+                </div>
+                {% endif %}
+                
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h1 class="card-title">{{ event.title }}</h1>
+                        <span class="badge bg-{% if event.is_active %}success{% else %}secondary{% endif %} fs-6">
+                            {% if event.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+                    
+                    <p class="text-muted mb-3">
+                        <i class="fas fa-tag"></i> {{ event.event_type.name }}
+                        {% if event.event_type.description %}
+                            - {{ event.event_type.description }}
+                        {% endif %}
+                    </p>
+                    
+                    <div class="mb-4">
+                        <h5>Description</h5>
+                        <p class="card-text">{{ event.description|linebreaks }}</p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-calendar"></i> Event Details</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Start Date:</strong> {{ event.start_date|date:"F d, Y" }}</li>
+                                <li><strong>Start Time:</strong> {{ event.start_date|time:"g:i A" }}</li>
+                                <li><strong>End Date:</strong> {{ event.end_date|date:"F d, Y" }}</li>
+                                <li><strong>End Time:</strong> {{ event.end_date|time:"g:i A" }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-map-marker-alt"></i> Location & Capacity</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Location:</strong> {{ event.location }}</li>
+                                <li><strong>Capacity:</strong> {{ event.capacity }} attendees</li>
+                                <li><strong>Booked:</strong> {{ booking_count }} attendees</li>
+                                <li><strong>Available:</strong> {{ available_spots }} spots</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Event Information</h5>
+                    
+                    <div class="mb-3">
+                        <h6>Price</h6>
+                        <h4 class="text-primary">
+                            {% if event.price > 0 %}
+                                ${{ event.price }}
+                            {% else %}
+                                Free
+                            {% endif %}
+                        </h4>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Availability</h6>
+                        <div class="progress mb-2">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {% widthratio booking_count event.capacity 100 %}%"
+                                 aria-valuenow="{{ booking_count }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="{{ event.capacity }}">
+                                {% widthratio booking_count event.capacity 100 %}%
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ booking_count }} of {{ event.capacity }} spots taken</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Status</h6>
+                        {% if event.start_date > now %}
+                            {% if event.is_active %}
+                                {% if available_spots > 0 %}
+                                    <span class="badge bg-success">Open for Booking</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Fully Booked</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary">Event Inactive</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge bg-info">Event Ended</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        {% if can_book %}
+                            <a href="{% url 'bookings:booking_create' event.id %}" class="btn btn-primary">
+                                <i class="fas fa-ticket-alt"></i> Book This Event
+                            </a>
+                        {% elif not event.is_active %}
+                            <button class="btn btn-secondary" disabled>
+                                <i class="fas fa-ban"></i> Event Inactive
+                            </button>
+                        {% elif available_spots == 0 %}
+                            <button class="btn btn-warning" disabled>
+                                <i class="fas fa-exclamation-triangle"></i> Fully Booked
+                            </button>
+                        {% elif event.start_date <= now %}
+                            <button class="btn btn-info" disabled>
+                                <i class="fas fa-clock"></i> Event Ended
+                            </button>
+                        {% endif %}
+                        
+                        {% if user.is_organizer %}
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'events:event_edit' event.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-edit"></i> Edit Event
+                            </a>
+                            <a href="{% url 'events:event_delete' event.id %}" class="btn btn-outline-danger">
+                                <i class="fas fa-trash"></i> Delete
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        <a href="{% url 'events:event_list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left"></i> Back to Events
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Event Type Information -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-tag"></i> Event Type
+                    </h6>
+                    <p class="card-text">
+                        <strong>{{ event.event_type.name }}</strong>
+                        {% if event.event_type.description %}
+                            <br><small class="text-muted">{{ event.event_type.description }}</small>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

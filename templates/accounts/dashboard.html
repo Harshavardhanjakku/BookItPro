@@ -77,37 +77,92 @@
             </div>
         </div>
         
+        <!-- Recent Events -->
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-tasks"></i> Next Steps</h5>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-calendar-alt"></i> Recent Events</h5>
+                        <a href="{% url 'events:event_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            {% for step in next_steps %}
-                            <div class="col-md-6 mb-3">
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                            <span class="fw-bold">{{ forloop.counter }}</span>
+                        {% if events %}
+                            <div class="row">
+                                {% for event in events %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0">
+                                            {% if event.event_type.icon %}
+                                                <i class="{{ event.event_type.icon }} fa-2x text-primary"></i>
+                                            {% else %}
+                                                <i class="fas fa-calendar fa-2x text-primary"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex-grow-1 ms-3">
+                                            <h6 class="mb-0">{{ event.title }}</h6>
+                                            <small class="text-muted">{{ event.event_type.name }} • {{ event.start_date|date:"M d, Y" }}</small>
+                                        </div>
+                                        <div class="flex-shrink-0">
+                                            <a href="{% url 'events:event_detail' event.id %}" class="btn btn-sm btn-outline-primary">View</a>
                                         </div>
                                     </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <h6 class="mb-0">{{ step }}</h6>
-                                        <small class="text-muted">Coming soon...</small>
-                                    </div>
                                 </div>
+                                {% endfor %}
                             </div>
-                            {% endfor %}
-                        </div>
-                        <div class="text-center mt-4">
-                            <div class="alert alert-warning">
-                                <i class="fas fa-info-circle"></i>
-                                <strong>Event Management System</strong> is currently being implemented. 
-                                You can create events and manage bookings once the system is complete.
+                        {% else %}
+                            <div class="text-center py-3">
+                                <i class="fas fa-calendar-plus fa-2x text-muted mb-2"></i>
+                                <p class="text-muted mb-0">No events created yet</p>
+                                <a href="{% url 'events:event_create' %}" class="btn btn-sm btn-primary mt-2">Create First Event</a>
                             </div>
-                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Bookings -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-ticket-alt"></i> Recent Bookings</h5>
+                        <a href="{% url 'bookings:admin_booking_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                    <div class="card-body">
+                        {% if bookings %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Event</th>
+                                            <th>Attendee</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for booking in bookings %}
+                                        <tr>
+                                            <td>{{ booking.event.title }}</td>
+                                            <td>{{ booking.user.get_full_name|default:booking.user.email }}</td>
+                                            <td>{{ booking.event.start_date|date:"M d" }}</td>
+                                            <td>
+                                                <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% elif booking.status == 'cancelled' %}danger{% else %}secondary{% endif %}">
+                                                    {{ booking.get_status_display }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-3">
+                                <i class="fas fa-ticket-alt fa-2x text-muted mb-2"></i>
+                                <p class="text-muted mb-0">No bookings yet</p>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -148,37 +203,87 @@
             </div>
         </div>
         
+        <!-- Upcoming Events -->
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-tasks"></i> Next Steps</h5>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-calendar-alt"></i> Upcoming Events</h5>
+                        <a href="{% url 'events:event_list' %}" class="btn btn-sm btn-outline-primary">Browse All</a>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            {% for step in next_steps %}
-                            <div class="col-md-6 mb-3">
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                            <span class="fw-bold">{{ forloop.counter }}</span>
+                        {% if events %}
+                            <div class="row">
+                                {% for event in events %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0">
+                                            {% if event.event_type.icon %}
+                                                <i class="{{ event.event_type.icon }} fa-2x text-primary"></i>
+                                            {% else %}
+                                                <i class="fas fa-calendar fa-2x text-primary"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex-grow-1 ms-3">
+                                            <h6 class="mb-0">{{ event.title }}</h6>
+                                            <small class="text-muted">{{ event.event_type.name }} • {{ event.start_date|date:"M d, Y" }}</small>
+                                        </div>
+                                        <div class="flex-shrink-0">
+                                            <a href="{% url 'events:event_detail' event.id %}" class="btn btn-sm btn-outline-primary">View</a>
                                         </div>
                                     </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <h6 class="mb-0">{{ step }}</h6>
-                                        <small class="text-muted">Coming soon...</small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-3">
+                                <i class="fas fa-calendar-times fa-2x text-muted mb-2"></i>
+                                <p class="text-muted mb-0">No upcoming events available</p>
+                                <a href="{% url 'events:event_list' %}" class="btn btn-sm btn-primary mt-2">Browse Events</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- My Recent Bookings -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-ticket-alt"></i> My Recent Bookings</h5>
+                        <a href="{% url 'bookings:booking_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                    <div class="card-body">
+                        {% if bookings %}
+                            <div class="row">
+                                {% for booking in bookings %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0">
+                                            <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% elif booking.status == 'cancelled' %}danger{% else %}secondary{% endif %} fs-6">
+                                                {{ booking.get_status_display }}
+                                            </span>
+                                        </div>
+                                        <div class="flex-grow-1 ms-3">
+                                            <h6 class="mb-0">{{ booking.event.title }}</h6>
+                                            <small class="text-muted">{{ booking.event.start_date|date:"M d, Y" }} • Code: {{ booking.confirmation_code }}</small>
+                                        </div>
+                                        <div class="flex-shrink-0">
+                                            <a href="{% url 'bookings:booking_detail' booking.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                        </div>
                                     </div>
                                 </div>
+                                {% endfor %}
                             </div>
-                            {% endfor %}
-                        </div>
-                        <div class="text-center mt-4">
-                            <div class="alert alert-warning">
-                                <i class="fas fa-info-circle"></i>
-                                <strong>Event Booking System</strong> is currently being implemented. 
-                                You can browse events and make bookings once the system is complete.
+                        {% else %}
+                            <div class="text-center py-3">
+                                <i class="fas fa-ticket-alt fa-2x text-muted mb-2"></i>
+                                <p class="text-muted mb-0">No bookings yet</p>
+                                <a href="{% url 'events:event_list' %}" class="btn btn-sm btn-primary mt-2">Browse Events</a>
                             </div>
-                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

@@ -42,6 +42,7 @@ class Event(TenantAwareModel):
     
     # Status and metadata
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    is_active = models.BooleanField(default=True, help_text="Whether the event is active and visible to users")
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     

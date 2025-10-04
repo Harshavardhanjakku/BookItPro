@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Event - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'events:event_list' %}">Events</a></li>
+                    {% if event %}
+                    <li class="breadcrumb-item"><a href="{% url 'events:event_detail' event.id %}">{{ event.title }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                    {% else %}
+                    <li class="breadcrumb-item active" aria-current="page">Create</li>
+                    {% endif %}
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-calendar-plus"></i> {{ action }} Event</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="{{ form.title.id_for_label }}" class="form-label">Event Title *</label>
+                                    {{ form.title }}
+                                    {% if form.title.errors %}
+                                        <div class="text-danger small">{{ form.title.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.event_type.id_for_label }}" class="form-label">Event Type *</label>
+                                    {{ form.event_type }}
+                                    {% if form.event_type.errors %}
+                                        <div class="text-danger small">{{ form.event_type.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        <a href="{% url 'events:event_type_create' %}" target="_blank">Create new event type</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description *</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.start_date.id_for_label }}" class="form-label">Start Date & Time *</label>
+                                    {{ form.start_date }}
+                                    {% if form.start_date.errors %}
+                                        <div class="text-danger small">{{ form.start_date.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.end_date.id_for_label }}" class="form-label">End Date & Time *</label>
+                                    {{ form.end_date }}
+                                    {% if form.end_date.errors %}
+                                        <div class="text-danger small">{{ form.end_date.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="{{ form.location.id_for_label }}" class="form-label">Location *</label>
+                                    {{ form.location }}
+                                    {% if form.location.errors %}
+                                        <div class="text-danger small">{{ form.location.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.capacity.id_for_label }}" class="form-label">Capacity *</label>
+                                    {{ form.capacity }}
+                                    {% if form.capacity.errors %}
+                                        <div class="text-danger small">{{ form.capacity.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.price.id_for_label }}" class="form-label">Price</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        {{ form.price }}
+                                    </div>
+                                    {% if form.price.errors %}
+                                        <div class="text-danger small">{{ form.price.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Enter 0 for free events</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.image.id_for_label }}" class="form-label">Event Image</label>
+                                    {{ form.image }}
+                                    {% if form.image.errors %}
+                                        <div class="text-danger small">{{ form.image.errors.0 }}</div>
+                                    {% endif %}
+                                    {% if event and event.image %}
+                                        <div class="form-text">
+                                            Current: <a href="{{ event.image.url }}" target="_blank">{{ event.image.name }}</a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    Active Event
+                                </label>
+                            </div>
+                            {% if form.is_active.errors %}
+                                <div class="text-danger small">{{ form.is_active.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Inactive events won't be visible to attendees</div>
+                        </div>
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors.0 }}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% if event %}{% url 'events:event_detail' event.id %}{% else %}{% url 'events:event_list' %}{% endif %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ action }} Event
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set minimum date to today for start_date
+document.addEventListener('DOMContentLoaded', function() {
+    const startDateInput = document.getElementById('{{ form.start_date.id_for_label }}');
+    const endDateInput = document.getElementById('{{ form.end_date.id_for_label }}');
+    
+    if (startDateInput) {
+        const today = new Date().toISOString().slice(0, 16);
+        startDateInput.min = today;
+        
+        // Update end date minimum when start date changes
+        startDateInput.addEventListener('change', function() {
+            if (endDateInput) {
+                endDateInput.min = this.value;
+            }
+        });
+    }
+    
+    if (endDateInput) {
+        const today = new Date().toISOString().slice(0, 16);
+        endDateInput.min = today;
+    }
+});
+</script>
+{% endblock %}

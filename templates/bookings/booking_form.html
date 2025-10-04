@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Book Event - {{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'events:event_list' %}">Events</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'events:event_detail' event.id %}">{{ event.title }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Book Event</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-ticket-alt"></i> Book Event</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Event Summary -->
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-calendar-alt"></i> Event Details</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>{{ event.title }}</strong><br>
+                                <small class="text-muted">{{ event.event_type.name }}</small>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <strong>
+                                    {% if event.price > 0 %}
+                                        ${{ event.price }}
+                                    {% else %}
+                                        Free
+                                    {% endif %}
+                                </strong><br>
+                                <small class="text-muted">{{ available_spots }} spots available</small>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small><strong>Date:</strong> {{ event.start_date|date:"F d, Y" }}</small><br>
+                                <small><strong>Time:</strong> {{ event.start_date|time:"g:i A" }} - {{ event.end_date|time:"g:i A" }}</small>
+                            </div>
+                            <div class="col-md-6">
+                                <small><strong>Location:</strong> {{ event.location }}</small><br>
+                                <small><strong>Capacity:</strong> {{ event.capacity }} attendees</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">Special Requirements or Notes</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger small">{{ form.notes.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Any special requirements, dietary restrictions, or additional information (optional)</div>
+                        </div>
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'events:event_detail' event.id %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Event
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-ticket-alt"></i> Confirm Booking
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Booking Terms -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6><i class="fas fa-info-circle"></i> Booking Terms</h6>
+                    <ul class="small text-muted mb-0">
+                        <li>Your booking will be confirmed immediately upon submission</li>
+                        <li>You will receive a confirmation code for your booking</li>
+                        <li>You can cancel your booking up to the event start time</li>
+                        <li>Please arrive on time for the event</li>
+                        <li>Contact the organizer if you have any questions</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

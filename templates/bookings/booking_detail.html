@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}Booking Details - {{ booking.event.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'bookings:booking_list' %}">My Bookings</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ booking.event.title }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4><i class="fas fa-ticket-alt"></i> Booking Details</h4>
+                        <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% elif booking.status == 'cancelled' %}danger{% else %}secondary{% endif %} fs-6">
+                            {{ booking.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-calendar"></i> Event Information</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Event:</strong> {{ booking.event.title }}</li>
+                                <li><strong>Type:</strong> {{ booking.event.event_type.name }}</li>
+                                <li><strong>Date:</strong> {{ booking.event.start_date|date:"F d, Y" }}</li>
+                                <li><strong>Time:</strong> {{ booking.event.start_date|time:"g:i A" }} - {{ booking.event.end_date|time:"g:i A" }}</li>
+                                <li><strong>Location:</strong> {{ booking.event.location }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-user"></i> Booking Information</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Confirmation Code:</strong> <code>{{ booking.confirmation_code }}</code></li>
+                                <li><strong>Booking Date:</strong> {{ booking.booking_date|date:"F d, Y g:i A" }}</li>
+                                <li><strong>Status:</strong> {{ booking.get_status_display }}</li>
+                                <li><strong>Price:</strong> 
+                                    {% if booking.event.price > 0 %}
+                                        ${{ booking.event.price }}
+                                    {% else %}
+                                        Free
+                                    {% endif %}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    {% if booking.notes %}
+                    <div class="mt-3">
+                        <h6><i class="fas fa-sticky-note"></i> Notes</h6>
+                        <p class="text-muted">{{ booking.notes|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <h6><i class="fas fa-history"></i> Booking History</h6>
+                        {% if history %}
+                            <div class="timeline">
+                                {% for entry in history %}
+                                <div class="timeline-item">
+                                    <div class="timeline-marker"></div>
+                                    <div class="timeline-content">
+                                        <h6 class="timeline-title">{{ entry.get_action_display }}</h6>
+                                        <p class="timeline-text">{{ entry.notes }}</p>
+                                        <small class="text-muted">{{ entry.timestamp|date:"F d, Y g:i A" }}</small>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No history available for this booking.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Actions</h5>
+                    
+                    <div class="d-grid gap-2">
+                        {% if can_cancel %}
+                            <a href="{% url 'bookings:booking_cancel' booking.id %}" class="btn btn-outline-danger">
+                                <i class="fas fa-times"></i> Cancel Booking
+                            </a>
+                        {% elif booking.status == 'cancelled' %}
+                            <button class="btn btn-secondary" disabled>
+                                <i class="fas fa-ban"></i> Booking Cancelled
+                            </button>
+                        {% elif booking.event.start_date <= now %}
+                            <button class="btn btn-info" disabled>
+                                <i class="fas fa-clock"></i> Event Ended
+                            </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'events:event_detail' booking.event.id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-calendar"></i> View Event
+                        </a>
+                        
+                        <a href="{% url 'bookings:booking_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Bookings
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Event Summary -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-calendar-alt"></i> Event Summary
+                    </h6>
+                    <p class="card-text">
+                        <strong>{{ booking.event.title }}</strong><br>
+                        <small class="text-muted">{{ booking.event.event_type.name }}</small>
+                    </p>
+                    <p class="card-text small">
+                        {{ booking.event.description|truncatewords:20 }}
+                    </p>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <small class="text-muted">Date</small><br>
+                            <strong>{{ booking.event.start_date|date:"M d" }}</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Time</small><br>
+                            <strong>{{ booking.event.start_date|time:"g:i A" }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Information -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-info-circle"></i> Need Help?
+                    </h6>
+                    <p class="card-text small">
+                        If you have any questions about this booking or the event, please contact the event organizer.
+                    </p>
+                    <p class="card-text small">
+                        <strong>Confirmation Code:</strong><br>
+                        <code class="fs-6">{{ booking.confirmation_code }}</code>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -25px;
+    top: 5px;
+    width: 10px;
+    height: 10px;
+    background-color: #007bff;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #007bff;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 3px solid #007bff;
+}
+
+.timeline-title {
+    margin-bottom: 5px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.timeline-text {
+    margin-bottom: 5px;
+    font-size: 13px;
+    color: #6c757d;
+}
+</style>
+{% endblock %}

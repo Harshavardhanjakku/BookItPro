@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Cancel Booking - {{ booking.event.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'bookings:booking_list' %}">My Bookings</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'bookings:booking_detail' booking.id %}">{{ booking.event.title }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Cancel</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Cancel Booking</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Booking Information</h6>
+                        <p class="mb-0">You are about to cancel your booking for this event.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Event Details:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Event:</strong> {{ booking.event.title }}</li>
+                            <li><strong>Type:</strong> {{ booking.event.event_type.name }}</li>
+                            <li><strong>Date:</strong> {{ booking.event.start_date|date:"F d, Y" }}</li>
+                            <li><strong>Time:</strong> {{ booking.event.start_date|time:"g:i A" }}</li>
+                            <li><strong>Location:</strong> {{ booking.event.location }}</li>
+                            <li><strong>Confirmation Code:</strong> <code>{{ booking.confirmation_code }}</code></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-warning"></i> Important</h6>
+                        <ul class="mb-0">
+                            <li>This action cannot be undone</li>
+                            <li>You will lose your spot in this event</li>
+                            <li>If the event is paid, refund policies may apply</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'bookings:booking_detail' booking.id %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Keep Booking
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-times"></i> Cancel Booking
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

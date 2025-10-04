@@ -145,9 +145,13 @@ class TenantRegistrationView(CreateView):
 
 @login_required
 def dashboard(request):
-    """User dashboard"""
+    """User dashboard with real data"""
     user = request.user
     tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        messages.error(request, 'No tenant context found.')
+        return redirect('accounts:home')
     
     context = {
         'user': user,
@@ -158,27 +162,79 @@ def dashboard(request):
         'booking_count': 0,
     }
     
-    # For now, show basic dashboard until we implement event/booking queries
     if user.is_organizer():
-        # Show organizer dashboard
-        context['dashboard_type'] = 'organizer'
-        context['message'] = f'Welcome to your organizer dashboard for {tenant.name if tenant else "your organization"}!'
-        context['next_steps'] = [
-            'Create your first event',
-            'Set up event types',
-            'Manage bookings',
-            'View analytics'
-        ]
+        # Show organizer dashboard with real data
+        from events.models import Event, EventType
+        from bookings.models import Booking
+        
+        # Get events for this tenant
+        events = Event.objects.filter(tenant_schema=tenant.slug).order_by('-created_at')[:5]
+        event_count = Event.objects.filter(tenant_schema=tenant.slug).count()
+        
+        # Get bookings for this tenant
+        bookings = Booking.objects.filter(tenant_schema=tenant.slug).order_by('-booking_date')[:5]
+        booking_count = Booking.objects.filter(tenant_schema=tenant.slug).count()
+        
+        # Get event types
+        event_types = EventType.objects.filter(tenant_schema=tenant.slug).count()
+        
+        context.update({
+            'dashboard_type': 'organizer',
+            'message': f'Welcome to your organizer dashboard for {tenant.name}!',
+            'events': events,
+            'bookings': bookings,
+            'event_count': event_count,
+            'booking_count': booking_count,
+            'event_types_count': event_types,
+            'next_steps': [
+                'Create your first event',
+                'Set up event types',
+                'Manage bookings',
+                'View analytics'
+            ]
+        })
     else:
-        # Show attendee dashboard
-        context['dashboard_type'] = 'attendee'
-        context['message'] = f'Welcome {user.first_name}! Browse and book events.'
-        context['next_steps'] = [
-            'Browse available events',
-            'Book your first event',
-            'View your bookings',
-            'Update your profile'
-        ]
+        # Show attendee dashboard with real data
+        from events.models import Event
+        from bookings.models import Booking
+        
+        # Get user's bookings
+        bookings = Booking.objects.filter(
+            user=user,
+            tenant_schema=tenant.slug
+        ).order_by('-booking_date')[:5]
+        booking_count = Booking.objects.filter(
+            user=user,
+            tenant_schema=tenant.slug
+        ).count()
+        
+        # Get upcoming events
+        from django.utils import timezone
+        events = Event.objects.filter(
+            tenant_schema=tenant.slug,
+            is_active=True,
+            start_date__gt=timezone.now()
+        ).order_by('start_date')[:5]
+        event_count = Event.objects.filter(
+            tenant_schema=tenant.slug,
+            is_active=True,
+            start_date__gt=timezone.now()
+        ).count()
+        
+        context.update({
+            'dashboard_type': 'attendee',
+            'message': f'Welcome {user.first_name}! Browse and book events.',
+            'events': events,
+            'bookings': bookings,
+            'event_count': event_count,
+            'booking_count': booking_count,
+            'next_steps': [
+                'Browse available events',
+                'Book your first event',
+                'View your bookings',
+                'Update your profile'
+            ]
+        })
     
     return render(request, 'accounts/dashboard.html', context)
 

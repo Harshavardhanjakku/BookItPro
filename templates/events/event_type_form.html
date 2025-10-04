@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Event Type - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'events:event_type_list' %}">Event Types</a></li>
+                    {% if event_type %}
+                    <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                    {% else %}
+                    <li class="breadcrumb-item active" aria-current="page">Create</li>
+                    {% endif %}
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-tag"></i> {{ action }} Event Type</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">Event Type Name *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger small">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.icon.id_for_label }}" class="form-label">Icon Class</label>
+                            {{ form.icon }}
+                            {% if form.icon.errors %}
+                                <div class="text-danger small">{{ form.icon.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                FontAwesome icon class (e.g., fas fa-code, fas fa-video, fas fa-music)
+                            </div>
+                        </div>
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors.0 }}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'events:event_type_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ action }} Event Type
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Icon Examples -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6><i class="fas fa-lightbulb"></i> Icon Examples</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">Common event types:</small>
+                            <ul class="small">
+                                <li><code>fas fa-code</code> - Hackathon</li>
+                                <li><code>fas fa-video</code> - Webinar</li>
+                                <li><code>fas fa-music</code> - Concert</li>
+                                <li><code>fas fa-graduation-cap</code> - Workshop</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">More options:</small>
+                            <ul class="small">
+                                <li><code>fas fa-users</code> - Conference</li>
+                                <li><code>fas fa-gamepad</code> - Gaming</li>
+                                <li><code>fas fa-paint-brush</code> - Art</li>
+                                <li><code>fas fa-dumbbell</code> - Sports</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
