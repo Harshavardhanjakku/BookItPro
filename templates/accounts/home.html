@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - BookItPro{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">Welcome to BookItPro</h1>
+                <p class="lead mb-4">The premier multitenant event booking platform. Discover, book, and manage events across multiple organizations.</p>
+                <div class="d-flex gap-3">
+                    <a href="{% url 'accounts:register' %}" class="btn btn-light btn-lg">
+                        <i class="fas fa-user-plus"></i> Get Started
+                    </a>
+                    <a href="{% url 'accounts:login' %}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <i class="fas fa-calendar-check" style="font-size: 200px; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Organizations Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center mb-5">
+                <h2 class="display-5 fw-bold">Available Organizations</h2>
+                <p class="lead">Browse events from our partner organizations</p>
+            </div>
+        </div>
+        
+        <div class="row">
+            {% for tenant in tenants %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card card-hover h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-building text-primary" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5 class="card-title">{{ tenant.name }}</h5>
+                        <p class="card-text">{{ tenant.description|truncatewords:20 }}</p>
+                        <a href="/{{ tenant.slug }}/events/" class="btn btn-primary">
+                            <i class="fas fa-eye"></i> View Events
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No organizations available yet.
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center mb-5">
+                <h2 class="display-5 fw-bold">Why Choose BookItPro?</h2>
+                <p class="lead">Powerful features for event organizers and attendees</p>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-users text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5>Multitenant Architecture</h5>
+                    <p>Each organization operates in its own isolated environment with complete data separation.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-calendar-alt text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5>Event Management</h5>
+                    <p>Create, manage, and track events with comprehensive booking and capacity management.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-shield-alt text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5>Role-Based Access</h5>
+                    <p>Secure access control with different roles for organizers, managers, and attendees.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
