@@ -89,7 +89,8 @@ class UserRegistrationView(CreateView):
         
         # Assign tenant to user
         user.tenant = tenant
-        user.role = 'admin'  # Make them admin of their personal tenant
+        # Keep the role they selected during registration
+        # user.role is already set from the form
         user.save()
         
         # Create schema for the tenant
@@ -167,16 +168,16 @@ def dashboard(request):
         from events.models import Event, EventType
         from bookings.models import Booking
         
-        # Get events for this tenant
-        events = Event.objects.filter(tenant_schema=tenant.slug).order_by('-created_at')[:5]
-        event_count = Event.objects.filter(tenant_schema=tenant.slug).count()
+        # Get events for this tenant (all events in the organization)
+        events = Event.objects.filter(tenant=tenant).order_by('-created_at')[:5]
+        event_count = Event.objects.filter(tenant=tenant).count()
         
         # Get bookings for this tenant
-        bookings = Booking.objects.filter(tenant_schema=tenant.slug).order_by('-booking_date')[:5]
-        booking_count = Booking.objects.filter(tenant_schema=tenant.slug).count()
+        bookings = Booking.objects.filter(tenant=tenant).order_by('-booking_date')[:5]
+        booking_count = Booking.objects.filter(tenant=tenant).count()
         
         # Get event types
-        event_types = EventType.objects.filter(tenant_schema=tenant.slug).count()
+        event_types = EventType.objects.filter(tenant=tenant).count()
         
         context.update({
             'dashboard_type': 'organizer',
@@ -201,22 +202,22 @@ def dashboard(request):
         # Get user's bookings
         bookings = Booking.objects.filter(
             user=user,
-            tenant_schema=tenant.slug
+            tenant=tenant
         ).order_by('-booking_date')[:5]
         booking_count = Booking.objects.filter(
             user=user,
-            tenant_schema=tenant.slug
+            tenant=tenant
         ).count()
         
-        # Get upcoming events
+        # Get upcoming events (all events in the organization)
         from django.utils import timezone
         events = Event.objects.filter(
-            tenant_schema=tenant.slug,
+            tenant=tenant,
             is_active=True,
             start_date__gt=timezone.now()
         ).order_by('start_date')[:5]
         event_count = Event.objects.filter(
-            tenant_schema=tenant.slug,
+            tenant=tenant,
             is_active=True,
             start_date__gt=timezone.now()
         ).count()
@@ -253,6 +254,158 @@ def profile(request):
         return redirect('accounts:profile')
     
     return render(request, 'accounts/profile.html', {'user': request.user})
+
+
+@login_required
+def user_management(request):
+    """User management view for organization admins"""
+    current_tenant = get_current_tenant()
+    if not current_tenant:
+        messages.error(request, 'No tenant context found.')
+        return redirect('accounts:dashboard')
+    
+    # Check if user is admin
+    if not request.user.is_admin():
+        messages.error(request, 'You do not have permission to manage users.')
+        return redirect('accounts:dashboard')
+    
+    # Get all users in the organization
+    users = User.objects.filter(tenant=current_tenant).order_by('-date_joined')
+    
+    context = {
+        'users': users,
+        'tenant': current_tenant,
+    }
+    
+    return render(request, 'accounts/user_management.html', context)
+
+
+@login_required
+def add_user_to_organization(request):
+    """Add a user to the organization"""
+    current_tenant = get_current_tenant()
+    if not current_tenant:
+        messages.error(request, 'No tenant context found.')
+        return redirect('accounts:dashboard')
+    
+    # Check if user is admin
+    if not request.user.is_admin():
+        messages.error(request, 'You do not have permission to add users.')
+        return redirect('accounts:user_management')
+    
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        role = request.POST.get('role')
+        phone = request.POST.get('phone', '')
+        
+        # Check if user already exists
+        try:
+            user = User.objects.get(email=email)
+            if user.tenant:
+                messages.error(request, f'User {email} is already part of an organization.')
+                return redirect('accounts:add_user')
+            
+            # Add user to organization
+            user.tenant = current_tenant
+            user.role = role
+            user.first_name = first_name
+            user.last_name = last_name
+            user.phone = phone
+            user.save()
+            
+            messages.success(request, f'User {email} has been added to {current_tenant.name} as {role}.')
+            return redirect('accounts:user_management')
+            
+        except User.DoesNotExist:
+            # Create new user
+            password = 'temp123'  # Temporary password
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                phone=phone,
+                role=role,
+                tenant=current_tenant,
+                password=password
+            )
+            
+            messages.success(request, f'User {email} has been created and added to {current_tenant.name} as {role}.')
+            return redirect('accounts:user_management')
+    
+    return render(request, 'accounts/add_user.html', {'tenant': current_tenant})
+
+
+@login_required
+def update_user_role(request, user_id):
+    """Update user role in organization"""
+    current_tenant = get_current_tenant()
+    if not current_tenant:
+        messages.error(request, 'No tenant context found.')
+        return redirect('accounts:dashboard')
+    
+    # Check if user is admin
+    if not request.user.is_admin():
+        messages.error(request, 'You do not have permission to update user roles.')
+        return redirect('accounts:user_management')
+    
+    user = get_object_or_404(User, id=user_id, tenant=current_tenant)
+    
+    if request.method == 'POST':
+        new_role = request.POST.get('role')
+        if new_role in ['admin', 'manager', 'attendee']:
+            old_role = user.role
+            user.role = new_role
+            user.save()
+            messages.success(request, f'{user.email}\'s role has been changed from {old_role} to {new_role}.')
+        else:
+            messages.error(request, 'Invalid role selected.')
+        
+        return redirect('accounts:user_management')
+    
+    context = {
+        'user': user,
+        'tenant': current_tenant,
+    }
+    
+    return render(request, 'accounts/update_user_role.html', context)
+
+
+@login_required
+def remove_user_from_organization(request, user_id):
+    """Remove user from organization"""
+    current_tenant = get_current_tenant()
+    if not current_tenant:
+        messages.error(request, 'No tenant context found.')
+        return redirect('accounts:dashboard')
+    
+    # Check if user is admin
+    if not request.user.is_admin():
+        messages.error(request, 'You do not have permission to remove users.')
+        return redirect('accounts:user_management')
+    
+    user = get_object_or_404(User, id=user_id, tenant=current_tenant)
+    
+    # Prevent admin from removing themselves
+    if user == request.user:
+        messages.error(request, 'You cannot remove yourself from the organization.')
+        return redirect('accounts:user_management')
+    
+    if request.method == 'POST':
+        user.tenant = None
+        user.role = 'attendee'  # Reset to default role
+        user.save()
+        messages.success(request, f'{user.email} has been removed from {current_tenant.name}.')
+        return redirect('accounts:user_management')
+    
+    context = {
+        'user': user,
+        'tenant': current_tenant,
+    }
+    
+    return render(request, 'accounts/remove_user.html', context)
 
 
 # Password reset views

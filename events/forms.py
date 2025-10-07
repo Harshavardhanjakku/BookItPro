@@ -36,7 +36,7 @@ class EventTypeForm(forms.ModelForm):
             if current_tenant:
                 existing = EventType.objects.filter(
                     name__iexact=name,
-                    tenant_schema=current_tenant.slug
+                    tenant=current_tenant
                 ).exclude(pk=self.instance.pk if self.instance else None)
                 if existing.exists():
                     raise ValidationError(f"Event type '{name}' already exists in your organization.")
@@ -103,7 +103,7 @@ class EventForm(forms.ModelForm):
         current_tenant = get_current_tenant()
         if current_tenant:
             self.fields['event_type'].queryset = EventType.objects.filter(
-                tenant_schema=current_tenant.slug
+                tenant=current_tenant
             )
         else:
             self.fields['event_type'].queryset = EventType.objects.none()
@@ -207,7 +207,7 @@ class EventSearchForm(forms.Form):
         # Add event types for current tenant
         current_tenant = get_current_tenant()
         if current_tenant:
-            event_types = EventType.objects.filter(tenant_schema=current_tenant.slug)
+            event_types = EventType.objects.filter(tenant=current_tenant)
             type_choices = [('all', 'All Types')]
             type_choices.extend([(et.id, et.name) for et in event_types])
             self.fields['event_type'].choices = type_choices

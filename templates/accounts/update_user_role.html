@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Update User Role - BookItPro{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-user-edit"></i> Update User Role</h2>
+                <a href="{% url 'accounts:user_management' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to User Management
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-user"></i> Update Role for {{ user.get_full_name|default:user.email }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <strong>Current Information:</strong>
+                            <ul class="list-unstyled mt-2">
+                                <li><strong>Name:</strong> {{ user.get_full_name|default:"No Name" }}</li>
+                                <li><strong>Email:</strong> {{ user.email }}</li>
+                                <li><strong>Current Role:</strong> 
+                                    <span class="badge bg-{% if user.role == 'admin' %}danger{% elif user.role == 'manager' %}warning{% else %}success{% endif %}">
+                                        {{ user.get_role_display }}
+                                    </span>
+                                </li>
+                                <li><strong>Phone:</strong> {{ user.phone|default:"Not provided" }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Organization:</strong>
+                            <ul class="list-unstyled mt-2">
+                                <li><strong>Name:</strong> {{ tenant.name }}</li>
+                                <li><strong>Joined:</strong> {{ user.date_joined|date:"M d, Y" }}</li>
+                                <li><strong>Last Login:</strong> {{ user.last_login|date:"M d, Y H:i"|default:"Never" }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="role" class="form-label">New Role *</label>
+                            <select class="form-control" id="role" name="role" required>
+                                <option value="">Select New Role</option>
+                                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin - Full Access</option>
+                                <option value="manager" {% if user.role == 'manager' %}selected{% endif %}>Event Manager - Event Management</option>
+                                <option value="attendee" {% if user.role == 'attendee' %}selected{% endif %}>Attendee - Event Booking</option>
+                            </select>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Warning:</strong> Changing a user's role will immediately affect their access permissions. 
+                            Make sure this change is intended.
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'accounts:user_management' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Role
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Role Permissions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <span class="badge bg-danger me-2">Admin</span>
+                        <strong>Full Access</strong>
+                        <ul class="list-unstyled small text-muted mt-1">
+                            <li>• Manage all events</li>
+                            <li>• Manage organization users</li>
+                            <li>• View all bookings</li>
+                            <li>• Access analytics</li>
+                            <li>• Manage event types</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <span class="badge bg-warning me-2">Event Manager</span>
+                        <strong>Event Management</strong>
+                        <ul class="list-unstyled small text-muted mt-1">
+                            <li>• Create and edit events</li>
+                            <li>• Manage event types</li>
+                            <li>• View all bookings</li>
+                            <li>• Update booking status</li>
+                            <li>• Access event analytics</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <span class="badge bg-success me-2">Attendee</span>
+                        <strong>Event Booking</strong>
+                        <ul class="list-unstyled small text-muted mt-1">
+                            <li>• Browse available events</li>
+                            <li>• Book events</li>
+                            <li>• View own bookings</li>
+                            <li>• Cancel bookings</li>
+                            <li>• Update profile</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

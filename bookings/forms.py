@@ -48,7 +48,7 @@ class BookingForm(forms.ModelForm):
             existing_booking = Booking.objects.filter(
                 event=self.event,
                 user=self.user,
-                tenant_schema=current_tenant.slug,
+                tenant=current_tenant,
                 status__in=['confirmed', 'pending']
             ).exists()
             
@@ -59,7 +59,7 @@ class BookingForm(forms.ModelForm):
         booking_count = Booking.objects.filter(
             event=self.event,
             status='confirmed',
-            tenant_schema=current_tenant.slug if current_tenant else ''
+            tenant=current_tenant
         ).count()
         
         if booking_count >= self.event.capacity:

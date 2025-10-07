@@ -9,6 +9,7 @@ class EventType(TenantAwareModel):
     name = models.CharField(max_length=50)
     description = models.TextField(blank=True)
     icon = models.CharField(max_length=50, blank=True, help_text="Font Awesome icon class")
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, null=True, blank=True)
     
     class Meta:
         verbose_name = "Event Type"

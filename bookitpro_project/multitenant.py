@@ -30,6 +30,9 @@ class TenantAwareModel(models.Model):
         current_tenant = get_current_tenant()
         if current_tenant:
             self.tenant_schema = current_tenant.slug
+            # Also set tenant field if it exists (for models that have it)
+            if hasattr(self, 'tenant'):
+                self.tenant = current_tenant
         super().save(*args, **kwargs)
 
 

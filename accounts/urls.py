@@ -15,6 +15,12 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('profile/', views.profile, name='profile'),
     
+    # User Management URLs (Admin only)
+    path('users/', views.user_management, name='user_management'),
+    path('users/add/', views.add_user_to_organization, name='add_user'),
+    path('users/<int:user_id>/update-role/', views.update_user_role, name='update_user_role'),
+    path('users/<int:user_id>/remove/', views.remove_user_from_organization, name='remove_user'),
+    
     # Password Reset URLs
     path('password-reset/', views.CustomPasswordResetView.as_view(), name='password_reset'),
     path('password-reset/done/', views.CustomPasswordResetDoneView.as_view(), name='password_reset_done'),

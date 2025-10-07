@@ -17,6 +17,7 @@ class Booking(TenantAwareModel):
     
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='bookings')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')
+    tenant = models.ForeignKey('accounts.Tenant', on_delete=models.CASCADE, null=True, blank=True)
     
     # Booking details
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
@@ -80,6 +81,7 @@ class BookingHistory(TenantAwareModel):
     changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     reason = models.TextField(blank=True)
     changed_at = models.DateTimeField(default=timezone.now)
+    tenant = models.ForeignKey('accounts.Tenant', on_delete=models.CASCADE, null=True, blank=True)
     
     class Meta:
         verbose_name = "Booking History"

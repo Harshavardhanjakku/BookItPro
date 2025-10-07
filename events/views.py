@@ -24,7 +24,7 @@ def event_list(request):
     
     # Get search form
     search_form = EventSearchForm(request.GET)
-    events = Event.objects.filter(tenant_schema=current_tenant.slug)
+    events = Event.objects.filter(tenant=current_tenant)
     
     # Apply search filters
     if search_form.is_valid():
@@ -81,7 +81,7 @@ def event_detail(request, event_id):
         messages.error(request, 'No tenant context found.')
         return redirect('accounts:dashboard')
     
-    event = get_object_or_404(Event, id=event_id, tenant_schema=current_tenant.slug)
+    event = get_object_or_404(Event, id=event_id, tenant=current_tenant)
     
     # Get booking count for this event
     booking_count = 0
@@ -147,7 +147,7 @@ def event_edit(request, event_id):
         messages.error(request, 'You do not have permission to edit events.')
         return redirect('events:event_list')
     
-    event = get_object_or_404(Event, id=event_id, tenant_schema=current_tenant.slug)
+    event = get_object_or_404(Event, id=event_id, tenant=current_tenant)
     
     if request.method == 'POST':
         form = EventForm(request.POST, request.FILES, instance=event)
@@ -181,7 +181,7 @@ def event_delete(request, event_id):
         messages.error(request, 'You do not have permission to delete events.')
         return redirect('events:event_list')
     
-    event = get_object_or_404(Event, id=event_id, tenant_schema=current_tenant.slug)
+    event = get_object_or_404(Event, id=event_id, tenant=current_tenant)
     
     if request.method == 'POST':
         event_title = event.title
@@ -210,7 +210,7 @@ def event_type_list(request):
         messages.error(request, 'You do not have permission to manage event types.')
         return redirect('events:event_type_list')
     
-    event_types = EventType.objects.filter(tenant_schema=current_tenant.slug).order_by('name')
+    event_types = EventType.objects.filter(tenant=current_tenant).order_by('name')
     
     context = {
         'event_types': event_types,
@@ -237,6 +237,7 @@ def event_type_create(request):
         form = EventTypeForm(request.POST)
         if form.is_valid():
             event_type = form.save(commit=False)
+            event_type.tenant = current_tenant
             event_type.save()
             messages.success(request, f'Event type "{event_type.name}" created successfully!')
             return redirect('events:event_type_list')
@@ -265,7 +266,7 @@ def event_type_edit(request, event_type_id):
         messages.error(request, 'You do not have permission to manage event types.')
         return redirect('events:event_type_list')
     
-    event_type = get_object_or_404(EventType, id=event_type_id, tenant_schema=current_tenant.slug)
+    event_type = get_object_or_404(EventType, id=event_type_id, tenant=current_tenant)
     
     if request.method == 'POST':
         form = EventTypeForm(request.POST, instance=event_type)
@@ -299,10 +300,10 @@ def event_type_delete(request, event_type_id):
         messages.error(request, 'You do not have permission to manage event types.')
         return redirect('events:event_type_list')
     
-    event_type = get_object_or_404(EventType, id=event_type_id, tenant_schema=current_tenant.slug)
+    event_type = get_object_or_404(EventType, id=event_type_id, tenant=current_tenant)
     
     # Check if event type is being used
-    events_using_type = Event.objects.filter(event_type=event_type, tenant_schema=current_tenant.slug)
+    events_using_type = Event.objects.filter(event_type=event_type, tenant=current_tenant)
     if events_using_type.exists():
         messages.error(request, f'Cannot delete event type "{event_type.name}" because it is being used by {events_using_type.count()} event(s).')
         return redirect('events:event_type_list')
@@ -335,15 +336,15 @@ def event_stats_api(request):
         return JsonResponse({'error': 'Permission denied'}, status=403)
     
     try:
-        total_events = Event.objects.filter(tenant_schema=current_tenant.slug).count()
-        active_events = Event.objects.filter(tenant_schema=current_tenant.slug, is_active=True).count()
+        total_events = Event.objects.filter(tenant=current_tenant).count()
+        active_events = Event.objects.filter(tenant=current_tenant, is_active=True).count()
         upcoming_events = Event.objects.filter(
-            tenant_schema=current_tenant.slug,
+            tenant=current_tenant,
             start_date__gt=timezone.now()
         ).count()
         
         # Get event types with counts
-        event_types = EventType.objects.filter(tenant_schema=current_tenant.slug).annotate(
+        event_types = EventType.objects.filter(tenant=current_tenant).annotate(
             event_count=Count('events')
         ).order_by('-event_count')
         

@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - BookItPro{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-user"></i> My Profile</h2>
+                <div class="text-muted">
+                    Manage your account information
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-user-edit"></i> Profile Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" 
+                                       value="{{ user.first_name }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" 
+                                       value="{{ user.last_name }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" value="{{ user.email }}" disabled>
+                                <div class="form-text">Email cannot be changed</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">Phone</label>
+                                <input type="text" class="form-control" id="phone" name="phone" 
+                                       value="{{ user.phone }}">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="role" class="form-label">Role</label>
+                                <input type="text" class="form-control" id="role" value="{{ user.get_role_display }}" disabled>
+                                <div class="form-text">Role cannot be changed</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="tenant" class="form-label">Organization</label>
+                                <input type="text" class="form-control" id="tenant" 
+                                       value="{{ user.tenant.name|default:'No organization assigned' }}" disabled>
+                                <div class="form-text">Organization cannot be changed</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="date_joined" class="form-label">Member Since</label>
+                                <input type="text" class="form-control" id="date_joined" 
+                                       value="{{ user.date_joined|date:'F d, Y' }}" disabled>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_login" class="form-label">Last Login</label>
+                                <input type="text" class="form-control" id="last_login" 
+                                       value="{{ user.last_login|date:'F d, Y H:i'|default:'Never' }}" disabled>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'accounts:dashboard' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Profile
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Account Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                             style="width: 80px; height: 80px;">
+                            <i class="fas fa-user fa-2x"></i>
+                        </div>
+                    </div>
+                    
+                    <h6 class="text-center mb-3">{{ user.get_full_name|default:user.email }}</h6>
+                    
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span><i class="fas fa-shield-alt text-primary"></i> Role</span>
+                            <span class="badge bg-primary">{{ user.get_role_display }}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span><i class="fas fa-building text-info"></i> Organization</span>
+                            <span class="text-muted">{{ user.tenant.name|default:'None' }}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span><i class="fas fa-calendar text-success"></i> Member Since</span>
+                            <span class="text-muted">{{ user.date_joined|date:'M Y' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if user.is_organizer %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-tools"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'events:event_create' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-plus"></i> Create Event
+                        </a>
+                        <a href="{% url 'events:event_type_list' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-tags"></i> Manage Event Types
+                        </a>
+                        <a href="{% url 'bookings:admin_booking_list' %}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-list"></i> View All Bookings
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-ticket-alt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'events:event_list' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-calendar"></i> Browse Events
+                        </a>
+                        <a href="{% url 'bookings:booking_list' %}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-list"></i> My Bookings
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

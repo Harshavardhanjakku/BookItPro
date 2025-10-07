@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Remove User - BookItPro{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-user-times"></i> Remove User from Organization</h2>
+                <a href="{% url 'accounts:user_management' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to User Management
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Confirm User Removal</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Warning:</strong> This action will remove the user from your organization. 
+                        They will lose access to all organization events and bookings.
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <strong>User Information:</strong>
+                            <ul class="list-unstyled mt-2">
+                                <li><strong>Name:</strong> {{ user.get_full_name|default:"No Name" }}</li>
+                                <li><strong>Email:</strong> {{ user.email }}</li>
+                                <li><strong>Current Role:</strong> 
+                                    <span class="badge bg-{% if user.role == 'admin' %}danger{% elif user.role == 'manager' %}warning{% else %}success{% endif %}">
+                                        {{ user.get_role_display }}
+                                    </span>
+                                </li>
+                                <li><strong>Phone:</strong> {{ user.phone|default:"Not provided" }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Organization Details:</strong>
+                            <ul class="list-unstyled mt-2">
+                                <li><strong>Organization:</strong> {{ tenant.name }}</li>
+                                <li><strong>Joined:</strong> {{ user.date_joined|date:"M d, Y" }}</li>
+                                <li><strong>Last Login:</strong> {{ user.last_login|date:"M d, Y H:i"|default:"Never" }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>What happens when you remove this user:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>User will be removed from {{ tenant.name }}</li>
+                            <li>Their role will be reset to "Attendee"</li>
+                            <li>They will lose access to organization events</li>
+                            <li>Their existing bookings will remain but they won't see new events</li>
+                            <li>User account will still exist but without organization access</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'accounts:user_management' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-user-times"></i> Remove User
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-question-circle"></i> Need Help?</h5>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">
+                        If you're unsure about removing this user, consider:
+                    </p>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2">
+                            <i class="fas fa-arrow-right text-primary me-2"></i>
+                            <strong>Change Role:</strong> Instead of removing, you could change their role to "Attendee"
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-arrow-right text-primary me-2"></i>
+                            <strong>Contact User:</strong> Reach out to discuss their needs
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-arrow-right text-primary me-2"></i>
+                            <strong>Temporary Access:</strong> You can always add them back later
+                        </li>
+                    </ul>
+                    
+                    <div class="mt-3">
+                        <a href="{% url 'accounts:update_user_role' user.id %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-edit"></i> Change Role Instead
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-shield-alt"></i> Security Note</h5>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted mb-0">
+                        Removing a user is a permanent action that affects their access to your organization. 
+                        Make sure this is the intended action before proceeding.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

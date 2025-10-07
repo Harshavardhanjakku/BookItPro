@@ -26,7 +26,7 @@ def booking_list(request):
     search_form = BookingSearchForm(request.GET)
     bookings = Booking.objects.filter(
         user=request.user,
-        tenant_schema=current_tenant.slug
+        tenant=current_tenant
     ).select_related('event', 'event__event_type')
     
     # Apply search filters
@@ -78,14 +78,14 @@ def booking_detail(request, booking_id):
         Booking,
         id=booking_id,
         user=request.user,
-        tenant_schema=current_tenant.slug
+        tenant=current_tenant
     )
     
     # Get booking history
     history = BookingHistory.objects.filter(
         booking=booking,
-        tenant_schema=current_tenant.slug
-    ).order_by('-timestamp')
+        tenant=current_tenant
+    ).order_by('-changed_at')
     
     context = {
         'booking': booking,
@@ -108,7 +108,7 @@ def booking_create(request, event_id):
         messages.error(request, 'No tenant context found.')
         return redirect('accounts:dashboard')
     
-    event = get_object_or_404(Event, id=event_id, tenant_schema=current_tenant.slug)
+    event = get_object_or_404(Event, id=event_id, tenant=current_tenant)
     
     # Check if user can book this event
     if not event.is_active:
@@ -123,7 +123,7 @@ def booking_create(request, event_id):
     existing_booking = Booking.objects.filter(
         event=event,
         user=request.user,
-        tenant_schema=current_tenant.slug,
+        tenant=current_tenant,
         status__in=['confirmed', 'pending']
     ).exists()
     
@@ -135,7 +135,7 @@ def booking_create(request, event_id):
     booking_count = Booking.objects.filter(
         event=event,
         status='confirmed',
-        tenant_schema=current_tenant.slug
+        tenant=current_tenant
     ).count()
     
     if booking_count >= event.capacity:
@@ -148,6 +148,7 @@ def booking_create(request, event_id):
             booking = form.save(commit=False)
             booking.event = event
             booking.user = request.user
+            booking.tenant = current_tenant
             booking.confirmation_code = str(uuid.uuid4())[:8].upper()
             booking.status = 'confirmed'  # Auto-confirm for now
             booking.save()
@@ -155,9 +156,9 @@ def booking_create(request, event_id):
             # Create booking history entry
             BookingHistory.objects.create(
                 booking=booking,
-                action='created',
-                notes='Booking created and confirmed',
-                tenant_schema=current_tenant.slug
+                new_status='confirmed',
+                reason='Booking created and confirmed',
+                tenant=current_tenant
             )
             
             messages.success(
@@ -190,7 +191,7 @@ def booking_cancel(request, booking_id):
         Booking,
         id=booking_id,
         user=request.user,
-        tenant_schema=current_tenant.slug
+        tenant=current_tenant
     )
     
     # Check if booking can be cancelled
@@ -210,9 +211,10 @@ def booking_cancel(request, booking_id):
         # Create booking history entry
         BookingHistory.objects.create(
             booking=booking,
-            action='cancelled',
-            notes=f'Booking cancelled by user. Previous status: {old_status}',
-            tenant_schema=current_tenant.slug
+            old_status=old_status,
+            new_status='cancelled',
+            reason=f'Booking cancelled by user. Previous status: {old_status}',
+            tenant=current_tenant
         )
         
         messages.success(request, f'Booking for "{booking.event.title}" has been cancelled.')
@@ -242,7 +244,7 @@ def booking_update(request, booking_id):
     booking = get_object_or_404(
         Booking,
         id=booking_id,
-        tenant_schema=current_tenant.slug
+        tenant=current_tenant
     )
     
     if request.method == 'POST':
@@ -255,9 +257,10 @@ def booking_update(request, booking_id):
             if old_status != booking.status:
                 BookingHistory.objects.create(
                     booking=booking,
-                    action='status_changed',
-                    notes=f'Status changed from {old_status} to {booking.status} by {request.user.email}',
-                    tenant_schema=current_tenant.slug
+                    old_status=old_status,
+                    new_status=booking.status,
+                    reason=f'Status changed from {old_status} to {booking.status} by {request.user.email}',
+                    tenant=current_tenant
                 )
             
             messages.success(request, f'Booking updated successfully.')
@@ -290,7 +293,7 @@ def admin_booking_list(request):
     # Get search form
     search_form = BookingSearchForm(request.GET)
     bookings = Booking.objects.filter(
-        tenant_schema=current_tenant.slug
+        tenant=current_tenant
     ).select_related('event', 'event__event_type', 'user')
     
     # Apply search filters
@@ -350,23 +353,23 @@ def booking_stats_api(request):
         return JsonResponse({'error': 'Permission denied'}, status=403)
     
     try:
-        total_bookings = Booking.objects.filter(tenant_schema=current_tenant.slug).count()
+        total_bookings = Booking.objects.filter(tenant=current_tenant).count()
         confirmed_bookings = Booking.objects.filter(
-            tenant_schema=current_tenant.slug,
+            tenant=current_tenant,
             status='confirmed'
         ).count()
         pending_bookings = Booking.objects.filter(
-            tenant_schema=current_tenant.slug,
+            tenant=current_tenant,
             status='pending'
         ).count()
         cancelled_bookings = Booking.objects.filter(
-            tenant_schema=current_tenant.slug,
+            tenant=current_tenant,
             status='cancelled'
         ).count()
         
         # Get bookings by event
         event_bookings = Booking.objects.filter(
-            tenant_schema=current_tenant.slug,
+            tenant=current_tenant,
             status='confirmed'
         ).values('event__title').annotate(
             booking_count=Count('id')
